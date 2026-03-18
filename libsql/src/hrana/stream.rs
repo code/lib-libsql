@@ -163,6 +163,9 @@ where
                     self.inner
                         .affected_row_count
                         .store(result.affected_row_count, Ordering::SeqCst);
+                    self.inner
+                        .total_changes
+                        .fetch_add(result.affected_row_count, Ordering::SeqCst);
                     if let Some(last_insert_rowid) = result.last_insert_rowid {
                         self.inner
                             .last_insert_rowid
