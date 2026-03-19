@@ -15,7 +15,7 @@ RUN cat rust-toolchain.toml | grep "channel" | awk '{print $3}' | sed 's/\"//g' 
     && rustup update $(cat toolchain.txt) \
     && rustup default $(cat toolchain.txt) \
     && rm toolchain.txt rust-toolchain.toml \
-    && cargo install cargo-chef
+    && cargo install cargo-chef --locked
 
 FROM chef AS planner
 ARG BUILD_DEBUG=false
