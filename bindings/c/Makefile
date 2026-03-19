@@ -57,19 +57,30 @@ package-dylibs:
 	mkdir -p generated/libsql_experimental.xcframework/ios-arm64/libsql_experimental.framework/Headers
 	cp include/$(HEADER) generated/libsql_experimental.xcframework/ios-arm64/libsql_experimental.framework/Headers/
 
-# Pack simulator dylibs
-	cp ../../target/aarch64-apple-ios-sim/release/$(IOS_LIB_FILE) generated/$(IOS_FINAL_LIB_FILE)
+# Pack simulator dylibs (fat binary: arm64 + x86_64)
+	lipo -create \
+		../../target/aarch64-apple-ios-sim/release/$(IOS_LIB_FILE) \
+		../../target/x86_64-apple-ios/release/$(IOS_LIB_FILE) \
+		-output generated/$(IOS_FINAL_LIB_FILE)
 
-	cp generated/$(IOS_FINAL_LIB_FILE) generated/libsql_experimental.xcframework/ios-arm64-simulator/libsql_experimental.framework/
-	install_name_tool -id @rpath/libsql_experimental.framework/$(IOS_FINAL_LIB_FILE) generated/libsql_experimental.xcframework/ios-arm64-simulator/libsql_experimental.framework/$(IOS_FINAL_LIB_FILE)
-	codesign -f -s - --identifier com.turso.libsql-experimental generated/libsql_experimental.xcframework/ios-arm64-simulator/libsql_experimental.framework/$(IOS_FINAL_LIB_FILE)
+	cp generated/$(IOS_FINAL_LIB_FILE) generated/libsql_experimental.xcframework/ios-arm64_x86_64-simulator/libsql_experimental.framework/
+	install_name_tool -id @rpath/libsql_experimental.framework/$(IOS_FINAL_LIB_FILE) generated/libsql_experimental.xcframework/ios-arm64_x86_64-simulator/libsql_experimental.framework/$(IOS_FINAL_LIB_FILE)
+	codesign -f -s - --identifier com.turso.libsql-experimental generated/libsql_experimental.xcframework/ios-arm64_x86_64-simulator/libsql_experimental.framework/$(IOS_FINAL_LIB_FILE)
 	
-	mkdir -p generated/libsql_experimental.xcframework/ios-arm64-simulator/libsql_experimental.framework/Headers
-	cp include/$(HEADER) generated/libsql_experimental.xcframework/ios-arm64-simulator/libsql_experimental.framework/Headers/
+	mkdir -p generated/libsql_experimental.xcframework/ios-arm64_x86_64-simulator/libsql_experimental.framework/Headers
+	cp include/$(HEADER) generated/libsql_experimental.xcframework/ios-arm64_x86_64-simulator/libsql_experimental.framework/Headers/
 
 ios-build:
 	cargo build --release --target aarch64-apple-ios 
 	cargo build --release --target aarch64-apple-ios-sim
+	SDKROOT=$$(xcrun --sdk iphonesimulator --show-sdk-path) \
+	CFLAGS_x86_64_apple_ios="-target x86_64-apple-ios-simulator" \
+	CXXFLAGS_x86_64_apple_ios="-target x86_64-apple-ios-simulator" \
+	CC_x86_64_apple_ios=$$(xcrun --sdk iphonesimulator --find clang) \
+	CXX_x86_64_apple_ios=$$(xcrun --sdk iphonesimulator --find clang++) \
+	CMAKE_SYSTEM_NAME=iOS \
+	CMAKE_OSX_SYSROOT=$$(xcrun --sdk iphonesimulator --show-sdk-path) \
+	cargo build --release --target x86_64-apple-ios
 
 android: $(ARCHS_ANDROID)
 	rm -rf generated
